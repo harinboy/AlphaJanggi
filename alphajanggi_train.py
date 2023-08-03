@@ -12,10 +12,12 @@ def main():
     model_alpha.device=device0
     #model_alpha.load_state_dict(torch.load('./AlphaJanggi.pth', map_location = device0))
     model_alpha.load_state_dict(torch.load('./AlphaJanggi.pth', map_location = device0))
-    total_samples = LoadSamples('./AlphaJanggi_samples2')
-    lr=3e-5
+    total_samples = LoadSamples('./AlphaJanggi_samples4')
+    lr=1e-6
     optimizer = torch.optim.AdamW(model_alpha.parameters(), lr = lr, weight_decay=1e-5)
-    steps = 8576
+    with open('steps', 'r') as fp:
+        steps = int(fp.read())
+    #steps = 8704
     train_num = 1
     sample_num = 32768
     batch_size = 256
@@ -23,6 +25,8 @@ def main():
         steps += Train(model_alpha, optimizer, total_samples, sample_num = sample_num, batch_size=batch_size)
     print(steps, "steps")
     torch.save(model_alpha.state_dict(), './AlphaJanggi.pth')
+    with open('steps', 'w') as fp:
+        fp.write(str(steps))
 
     #TwoProcess(model_alpha, model_alpha2, 3, 3e-5, 32, 2048, 1, 32768, 256)
     #MultiProcess_notrain(model_alpha, 1, 4, 16, 4096)

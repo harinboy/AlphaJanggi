@@ -71,7 +71,8 @@ def TwoProcess_notrain(model_alpha, model_alpha2, iter_num, n=16, think_time=102
 
 def MultiProcess_notrain(model_alpha, iter_num, process_num = 8, n=16, think_time=1024):
     model_alpha.eval()
-    total_samples = LoadSamples('./AlphaJanggi_samples2')
+    total_samples = LoadSamples('./AlphaJanggi_samples4')
+    #total_samples = []
     with mp.Pool(process_num) as p:
         for i in range(iter_num):
             samples_list = p.starmap(Alpha_SelfPlay_Multi, [(model_alpha, n, think_time)]*process_num)
@@ -86,12 +87,13 @@ def MultiProcess_notrain(model_alpha, iter_num, process_num = 8, n=16, think_tim
                 total_samples = total_samples[-40000:]
             print(len(total_samples))
     #torch.save(model_alpha.state_dict(), 'AlphaJanggi.pth')
-    SaveSamples(total_samples, 'AlphaJanggi_samples2')
+    SaveSamples(total_samples, 'AlphaJanggi_samples4')
 
 def MultiProcess(model_alpha, iter_num, lr, process_num = 8, n=16, think_time=1024, train_num = 2, sample_num = 32768, batch_size = 256):
-    total_samples = LoadSamples('./AlphaJanggi_samples2')
+    total_samples = LoadSamples('./AlphaJanggi_samples4')
     optimizer = torch.optim.AdamW(model_alpha.parameters(), lr = lr, weight_decay=1e-5)
-    steps = 8192
+    with open("steps", 'r') as fp:
+        steps = int(fp.read())
     with mp.Pool(process_num) as p:
         for i in range(iter_num):
             model_alpha.eval()
@@ -111,8 +113,10 @@ def MultiProcess(model_alpha, iter_num, lr, process_num = 8, n=16, think_time=10
             for _ in range(train_num):
                 steps += Train(model_alpha, optimizer, total_samples, sample_num = sample_num, batch_size=batch_size)
             print(steps, "steps")
-    torch.save(model_alpha.state_dict(), 'AlphaJanggi.pth')
-    SaveSamples(total_samples, 'AlphaJanggi_samples2')
+            with open("steps", 'w') as fp:
+                fp.write(str(steps))
+            torch.save(model_alpha.state_dict(), 'AlphaJanggi.pth')
+            SaveSamples(total_samples, 'AlphaJanggi_samples4')
 
 def main():
     print(torch.cuda.device_count())
@@ -124,8 +128,8 @@ def main():
     #model_alpha.load_state_dict(torch.load('./AlphaJanggi_230313_2.pth', map_location = device0))
     model_alpha.load_state_dict(torch.load('./AlphaJanggi.pth', map_location = device0))
     #TwoProcess(model_alpha, model_alpha2, 3, 3e-5, 32, 2048, 1, 32768, 256)
-    #MultiProcess_notrain(model_alpha, 1, 4, 16, 4096)
-    MultiProcess_notrain(model_alpha, 1, 4, 16, 4096)
+    MultiProcess(model_alpha, 3, 3e-7, 2, 16, 8192, 1, 32768, 256)
+    #MultiProcess_notrain(model_alpha, 1, 2, 16, 8192)
     #OneProcess(model_alpha, 1, 3e-5, 64, 4096, 2, 16384, 256)
 
 if __name__ == '__main__':
