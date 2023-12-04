@@ -684,9 +684,9 @@ class State:
         return ret
 
         
-    def display(self):
+    def display(self, reverse = False):
         print("Turn", self.num, "Player", self.turn)
-        for j in range(9, -1, -1):
+        for j in (range(0, 10) if reverse else range(9, -1, -1)):
             for i in range(0, 9):
                 x = self.board[i][j]
                 if x == 0:
@@ -1079,24 +1079,27 @@ def ExpandTree_Batches(model, trees, think_time = 4096, verbose = False):
                         leaf.append((s, tree, e))
                         edges.append(e)
                         node.searchnum+=1
-            elif node.N<think_time//8:
-                stack.append((node, 64))
-            elif node.N<think_time//8*5:
-                stack.append((node, 32))
-            elif node.N<think_time//4*3:
-                stack.append((node, 8))
-            elif node.N<think_time//8*7:
-                stack.append((node, 4))
+            elif think_time >=2048:
+                if node.N<think_time//8:
+                    stack.append((node, 64))
+                elif node.N<think_time//8*5:
+                    stack.append((node, 32))
+                elif node.N<think_time//4*3:
+                    stack.append((node, 8))
+                elif node.N<think_time//8*7:
+                    stack.append((node, 4))
+                else:
+                    stack.append((node, 1))
             else:
-                stack.append((node, 1))
-            # elif node.N<think_time//8:
-            #     stack.append((node, 32))
-            # elif node.N<think_time//2:
-            #     stack.append((node, 16))
-            # elif node.N<think_time//4*3:
-            #     stack.append((node, 8))
-            # else:
-            #     stack.append((node, 2))
+                if node.N<think_time//8:
+                    stack.append((node, 32))
+                elif node.N<think_time//2:
+                    stack.append((node, 16))
+                elif node.N<think_time//4*3:
+                    stack.append((node, 4))
+                else:
+                    stack.append((node, 1))
+
 
         if playing_num==0:
             break
@@ -1226,7 +1229,7 @@ def Alpha_SelfPlay_Multi(model, n = 16, think_time = 4096, verbose = False):
             samples.append((state, p, avgV))
             avgV += (V-avgV)*(1-lamb)
             avgV = -avgV
-
+    torch.cuda.empty_cache()
     return samples
 
 def Train(model, optimizer, samples, sample_num = 2048, batch_size = 64):
